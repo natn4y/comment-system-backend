@@ -5,8 +5,15 @@ import cors from 'cors'
 // Import types separately to avoid CommonJS/ESM conflicts
 import type { Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import { prisma } from "./database/prismaClient";
+import { PrismaClient } from '@prisma/client';
 
+export const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: "mongodb://localhost:27017/comment-system?directConnection=true",
+        },
+    },
+});
 // Define interface for comment structure
 interface Comment {
     id?: string;
