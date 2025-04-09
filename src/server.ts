@@ -1,11 +1,11 @@
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
-import { PrismaClient } from "@prisma/client";
+import cors from 'cors'
 
 // Import types separately to avoid CommonJS/ESM conflicts
 import type { Request, Response } from "express";
-import type { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
+import { prisma } from "./database/prismaClient";
 
 // Define interface for comment structure
 interface Comment {
@@ -17,11 +17,11 @@ interface Comment {
     likes?: number;
 }
 
-const prisma = new PrismaClient();
 const app = express();
 const port = 8003;
 
 // Middleware setup
+app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -41,7 +41,7 @@ const io = new Server(httpServer, {
         credentials: true,
     },
     transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
-    path: "/socket.io/"
+    path: "/socket.io"
 })
 
 io.on("connection", (socket: Socket) => {
