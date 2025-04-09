@@ -1,16 +1,19 @@
 import express from "express";
 import http from "http";
 import cors from 'cors'
+import dotenvFlow from 'dotenv-flow';
+
+dotenvFlow.config();
 
 // Import types separately to avoid CommonJS/ESM conflicts
 import type { Request, Response } from "express";
 import { Server, Socket } from "socket.io";
 import { PrismaClient } from '@prisma/client';
 
-export const prisma = new PrismaClient({
+const prisma = new PrismaClient({
     datasources: {
         db: {
-            url: "mongodb://localhost:27017/comment-system?directConnection=true",
+            url: process.env.DATABASE_URL
         },
     },
 });
@@ -56,6 +59,7 @@ io.on("connection", (socket: Socket) => {
 
     socket.on("comment", async (comment: Comment) => {
         try {
+            console.log(comment);
             const savedComment = await prisma.comment.create({
                 data: {
                     nickname: comment.nickname,
