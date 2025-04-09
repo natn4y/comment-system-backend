@@ -1,9 +1,6 @@
 import express from "express";
 import http from "http";
 import cors from 'cors'
-import dotenvFlow from 'dotenv-flow';
-
-dotenvFlow.config();
 
 // Import types separately to avoid CommonJS/ESM conflicts
 import type { Request, Response } from "express";
