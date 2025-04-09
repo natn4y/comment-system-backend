@@ -41,7 +41,7 @@ const io = new Server(httpServer, {
         credentials: true,
     },
     transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
-    path: "/socket.io"
+    path: "/socket.io/"
 })
 
 io.on("connection", (socket: Socket) => {
