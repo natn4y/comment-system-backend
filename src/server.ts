@@ -35,12 +35,14 @@ const httpServer = http.createServer(app);
 
 // Setup Socket.IO
 const io = new Server(httpServer, {
-    path: '/socket',
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
+        origin: '*', // Permite qualquer origem
+        methods: ['GET', 'POST'],
+        credentials: true,
+    },
+    transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
+    path: "/socket.io"
+})
 
 io.on("connection", (socket: Socket) => {
     console.log("New client connected");
