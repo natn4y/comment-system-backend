@@ -166,17 +166,21 @@ const httpServer = http.createServer(app);
 // Setup Socket.IO
 const io = new Server(httpServer, {
     cors: {
-        origin: '*', // Permite qualquer origem
+        origin: ['https://comment-system-front-end.vercel.app', 'https://blog-xi-ten-69.vercel.app'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization']
     },
-    transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
-    path: "/socket.io"
-})
+    transports: ['websocket', 'polling'],
+    path: "/socket.io" // IMPORTANTE: Sem barra no final
+});
 
-io.on("connection", (socket: Socket) => {
-    console.log("New client connected");
+// Adicionar log para depuração
+console.log("Socket.io inicializado com path:", "/socket.io");
+
+// Configure apenas o namespace padrão (/) para resolver o erro "Invalid namespace"
+io.on("connection", (socket) => {
+    console.log("Cliente conectado ao socket com ID:", socket.id);
 
     socket.on("comment", async (comment: Comment) => {
         try {
