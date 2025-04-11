@@ -161,12 +161,12 @@ const httpServer = http.createServer(app);
 // Setup Socket.IO
 const io = new Server(httpServer, {
     cors: {
-        origin: ['https://comment-system-front-end.vercel.app', 'https://blog-xi-ten-69.vercel.app'],
+        origin: '*', // Permite qualquer origem
         methods: ['GET', 'POST'],
-        credentials: true
+        credentials: true,
     },
-    path: "/comment-system/socket.io",
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
+    path: "/comment-system/socket.io"
 });
 
 io.on("connection", (socket: Socket) => {
