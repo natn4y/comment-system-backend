@@ -28,7 +28,12 @@ const app = express();
 const port = 8003;
 
 // Middleware setup
-app.use(cors())
+app.use(cors({
+    origin: '*', // Especifique as origens permitidas como um array
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -43,117 +48,117 @@ app.get("/comments", (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
 
     Promise.all([
-      prisma.comment.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.comment.count()
+        prisma.comment.findMany({
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+        }),
+        prisma.comment.count()
     ])
-    .then(([comments, totalComments]) => {
-      res.send({
-        comments,
-        totalComments,
-        totalPages: Math.ceil(totalComments / limit),
-        currentPage: page
-      });
-    })
-    .catch(error => {
-      console.error('Error fetching comments:', error);
-      res.status(500).send({ error: 'Error fetching comments' });
-    });
-  });
+        .then(([comments, totalComments]) => {
+            res.send({
+                comments,
+                totalComments,
+                totalPages: Math.ceil(totalComments / limit),
+                currentPage: page
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching comments:', error);
+            res.status(500).send({ error: 'Error fetching comments' });
+        });
+});
 
-  // POST - Criar um novo comentário
-  app.post("/comments", (req: Request, res: Response) => {
+// POST - Criar um novo comentário
+app.post("/comments", (req: Request, res: Response) => {
     const { nickname, text, parentId } = req.body;
 
     // Validação sem usar 'return'
     if (!nickname || !text) {
-      res.status(400).send({ error: 'Nickname and text are required' });
+        res.status(400).send({ error: 'Nickname and text are required' });
     } else {
-      Promise.all([
-        prisma.comment.create({
-          data: {
-            nickname,
-            text,
-            parentId: parentId || null,
-            likes: 0,
-          },
-        })
-      ])
-      .then(([comment]) => {
-        res.status(201).send(comment);
-      })
-      .catch(error => {
-        console.error('Error creating comment:', error);
-        res.status(500).send({ error: 'Error creating comment' });
-      });
+        Promise.all([
+            prisma.comment.create({
+                data: {
+                    nickname,
+                    text,
+                    parentId: parentId || null,
+                    likes: 0,
+                },
+            })
+        ])
+            .then(([comment]) => {
+                res.status(201).send(comment);
+            })
+            .catch(error => {
+                console.error('Error creating comment:', error);
+                res.status(500).send({ error: 'Error creating comment' });
+            });
     }
-  });
+});
 
-  // PUT - Atualizar um comentário existente
-  app.put("/comments", (req: Request, res: Response) => {
+// PUT - Atualizar um comentário existente
+app.put("/comments", (req: Request, res: Response) => {
     const { id, text } = req.body;
 
     // Validação sem usar 'return'
     if (!id || !text) {
-      res.status(400).send({ error: 'Comment ID and text are required' });
+        res.status(400).send({ error: 'Comment ID and text are required' });
     } else {
-      Promise.all([
-        prisma.comment.updateMany({
-          where: { id },
-          data: {
-            text,
-            edited: true
-          },
-        })
-      ])
-      .then(([comment]) => {
-        if (comment.count === 0) {
-          res.status(404).send({ error: 'Comment not found or unauthorized' });
-        } else {
-          res.send({ success: true });
-        }
-      })
-      .catch(error => {
-        console.error('Error updating comment:', error);
-        res.status(500).send({ error: 'Error updating comment' });
-      });
+        Promise.all([
+            prisma.comment.updateMany({
+                where: { id },
+                data: {
+                    text,
+                    edited: true
+                },
+            })
+        ])
+            .then(([comment]) => {
+                if (comment.count === 0) {
+                    res.status(404).send({ error: 'Comment not found or unauthorized' });
+                } else {
+                    res.send({ success: true });
+                }
+            })
+            .catch(error => {
+                console.error('Error updating comment:', error);
+                res.status(500).send({ error: 'Error updating comment' });
+            });
     }
-  });
+});
 
-  // DELETE - Excluir um comentário
-  app.delete("/comments", (req: Request, res: Response) => {
+// DELETE - Excluir um comentário
+app.delete("/comments", (req: Request, res: Response) => {
     let id = req.query.id as string;
 
     // Se não estiver nos parâmetros de consulta, tente obter do corpo
     if (!id && req.body) {
-      id = req.body.id;
+        id = req.body.id;
     }
 
     // Validação sem usar 'return'
     if (!id) {
-      res.status(400).send({ error: 'Comment ID is required' });
+        res.status(400).send({ error: 'Comment ID is required' });
     } else {
-      Promise.all([
-        prisma.comment.deleteMany({
-          where: { id },
-        })
-      ])
-      .then(([comment]) => {
-        if (comment.count === 0) {
-          res.status(404).send({ error: 'Comment not found or unauthorized' });
-        } else {
-          res.send({ success: true });
-        }
-      })
-      .catch(error => {
-        console.error('Error deleting comment:', error);
-        res.status(500).send({ error: 'Error deleting comment' });
-      });
+        Promise.all([
+            prisma.comment.deleteMany({
+                where: { id },
+            })
+        ])
+            .then(([comment]) => {
+                if (comment.count === 0) {
+                    res.status(404).send({ error: 'Comment not found or unauthorized' });
+                } else {
+                    res.send({ success: true });
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting comment:', error);
+                res.status(500).send({ error: 'Error deleting comment' });
+            });
     }
-  });
+});
 
 // Create HTTP server
 const httpServer = http.createServer(app);
@@ -162,8 +167,9 @@ const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
     cors: {
         origin: '*', // Permite qualquer origem
-        methods: ['GET', 'POST'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization']
     },
     transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
     path: "/socket.io"
