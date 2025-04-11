@@ -37,19 +37,137 @@ app.get("/", (req: Request, res: Response) => {
     res.send("Express server with Socket.IO is running");
 });
 
+app.get("/comments", (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string || '1', 10);
+    const limit = parseInt(req.query.limit as string || '10', 10);
+    const skip = (page - 1) * limit;
+
+    Promise.all([
+        prisma.comment.findMany({
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+        }),
+        prisma.comment.count()
+    ])
+        .then(([comments, totalComments]) => {
+            res.send({
+                comments,
+                totalComments,
+                totalPages: Math.ceil(totalComments / limit),
+                currentPage: page
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching comments:', error);
+            res.status(500).send({ error: 'Error fetching comments' });
+        });
+});
+
+// POST - Criar um novo comentário
+app.post("/comments", (req: Request, res: Response) => {
+    const { nickname, text, parentId } = req.body;
+
+    // Validação sem usar 'return'
+    if (!nickname || !text) {
+        res.status(400).send({ error: 'Nickname and text are required' });
+    } else {
+        Promise.all([
+            prisma.comment.create({
+                data: {
+                    nickname,
+                    text,
+                    parentId: parentId || null,
+                    likes: 0,
+                },
+            })
+        ])
+            .then(([comment]) => {
+                res.status(201).send(comment);
+            })
+            .catch(error => {
+                console.error('Error creating comment:', error);
+                res.status(500).send({ error: 'Error creating comment' });
+            });
+    }
+});
+
+// PUT - Atualizar um comentário existente
+app.put("/comments", (req: Request, res: Response) => {
+    const { id, text } = req.body;
+
+    // Validação sem usar 'return'
+    if (!id || !text) {
+        res.status(400).send({ error: 'Comment ID and text are required' });
+    } else {
+        Promise.all([
+            prisma.comment.updateMany({
+                where: { id },
+                data: {
+                    text,
+                    edited: true
+                },
+            })
+        ])
+            .then(([comment]) => {
+                if (comment.count === 0) {
+                    res.status(404).send({ error: 'Comment not found or unauthorized' });
+                } else {
+                    res.send({ success: true });
+                }
+            })
+            .catch(error => {
+                console.error('Error updating comment:', error);
+                res.status(500).send({ error: 'Error updating comment' });
+            });
+    }
+});
+
+// DELETE - Excluir um comentário
+app.delete("/comments", (req: Request, res: Response) => {
+    let id = req.query.id as string;
+
+    // Se não estiver nos parâmetros de consulta, tente obter do corpo
+    if (!id && req.body) {
+        id = req.body.id;
+    }
+
+    // Validação sem usar 'return'
+    if (!id) {
+        res.status(400).send({ error: 'Comment ID is required' });
+    } else {
+        Promise.all([
+            prisma.comment.deleteMany({
+                where: { id },
+            })
+        ])
+            .then(([comment]) => {
+                if (comment.count === 0) {
+                    res.status(404).send({ error: 'Comment not found or unauthorized' });
+                } else {
+                    res.send({ success: true });
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting comment:', error);
+                res.status(500).send({ error: 'Error deleting comment' });
+            });
+    }
+});
+
 // Create HTTP server
 const httpServer = http.createServer(app);
 
 // Setup Socket.IO
 const io = new Server(httpServer, {
     cors: {
-        origin: '*', // Permite qualquer origem
+        origin: ['https://comment-system-front-end.vercel.app', 'https://blog-xi-ten-69.vercel.app'],
         methods: ['GET', 'POST'],
-        credentials: true,
+        credentials: true
     },
-    transports: ['websocket', 'polling'], // Habilita WebSocket com fallback para polling
-    path: "/socket.io"
-})
+    path: "/comment-system/socket.io",
+    transports: ['websocket', 'polling']
+});
 
 io.on("connection", (socket: Socket) => {
     console.log("New client connected");
